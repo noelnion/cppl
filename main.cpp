@@ -79,6 +79,7 @@ const   int buffer_h = 480;
   
   std::string outname = "outppm.ppm";
   print_ppm_image<buffer_w, buffer_h>(outname, buffer_w, buffer_h, buffer);
+std::cout << "Done\n"; 
 
   return 0;
   }
