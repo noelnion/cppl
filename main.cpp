@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <array>
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 uint32_t pack_color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha=255)
@@ -92,21 +93,57 @@ const   int buffer_h = 480;
 	}
     }
 
-  float player_x = 2 * map_w;
-  float player_y = 2 * map_h;
-  float player_a = 180/3.141592 * 45;
+  float player_x = 1.5;
+  float player_y = 5.5;
+  float player_a = float(M_PI/180.f) * -180;
+  float player_fov = (M_PI/2);
+  float d_angle = player_fov / buffer_w;
 
-  draw_rectangle<buffer_w, buffer_h>(5, 5, 80, 240, buffer, pack_color(0,0,0));
+  std::array<float, buffer_w> distances {0};
+  
+  draw_rectangle<buffer_w, buffer_h>(5, 5, player_x * map_w, player_y * map_h, buffer, pack_color(0,0,0));
 
-  for(float p = 0; p < 20; p += 0.05)
-    {
-      float dy, dx;
-      dx = std::
-    }
+  int distance_array_index = 0;
+  for(float angle_i = player_a - (player_fov/2); angle_i < player_a + (player_fov/2); angle_i += d_angle){
+      float p = 0;
+      for(; p < 20; p += 0.05)
+      {
+          float ray_ax = std::cos(angle_i) * p  + player_x;
+          float ray_ay = std::sin(angle_i) * p  + player_y;
+          //std::cout << ray_ay  << "\n";
+          //std::cout << ray_ax << "\t" << ray_ay << "\n";
+          //buffer[(ray_ay + 1.f) * buffer_w * map_w + (ray_ax * map_w)] = pack_color(255,255,255);
+          draw_rectangle<buffer_w, buffer_h>(1, 1, ray_ax * map_w, ray_ay * map_h,buffer, pack_color(255,255,255));
+          if (map[(int(ray_ay) * map_xsize) + int(ray_ax)] != "0"){break;}
+      }
+
+      distances[distance_array_index] = p;
+      ++distance_array_index;
+  }
   
   std::string outname = "outppm.ppm";
   print_ppm_image<buffer_w, buffer_h>(outname, buffer_w, buffer_h, buffer);
-  std::cout << "done" <<"\n"; 
+  std::cout << "done with atlas\n";
 
+  std::string viewportname = "viewport.ppm";
+  std::array<uint32_t, buffer_w * buffer_h> viewport;
+  for(auto &i :  viewport)
+    {
+      i = pack_color(102, 51, 0);
+    }
+
+  std::array<float, buffer_w> wall_height {0};
+  for(int i = 0; i < buffer_w; ++i)
+    {
+      wall_height[i] = 480 - ((480 - 2)/20) * distances[i];
+    }
+
+  for(int i = 0; i < buffer_w; ++i)
+    {
+      int y_i = int(0.5 * (buffer_h - wall_height[i]));
+      draw_rectangle<buffer_w, buffer_h>(wall_height[i], 1, i, y_i, viewport, pack_color(124,124,124));
+    }
+  
+  print_ppm_image<buffer_w, buffer_h>(viewportname, buffer_w, buffer_h, viewport);
   return 0;
   }
